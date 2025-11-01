@@ -20,7 +20,7 @@ class HeatMapTilesProvider extends TileProvider {
 
   @override
   ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
-    var tileSize = options.tileSize;
+    var tileSize = options.tileDimension;
 
     // disable zoom level 0 for now. ned to refactor _filterData
     List<DataPoint> filteredData =
@@ -32,7 +32,7 @@ class HeatMapTilesProvider extends TileProvider {
       minOpacity: heatMapOptions.minOpacity,
       gradient: heatMapOptions.gradient,
     );
-    return HeatMapImage(filteredData, imageHMOptions, tileSize);
+    return HeatMapImage(filteredData, imageHMOptions, tileSize.toDouble());
   }
 
   /// hyperbolic sine implementation
@@ -45,7 +45,7 @@ class HeatMapTilesProvider extends TileProvider {
     final zoom = coords.z;
     var scale = coords.z / 22 * 1.22;
     final radius = 25 * scale;
-    var size = options.tileSize;
+    var size = options.tileDimension;
     final maxZoom = options.maxZoom;
     final bounds = _bounds(coords, 1);
     final points = dataSource.getData(bounds, zoom.toDouble());
@@ -65,11 +65,11 @@ class HeatMapTilesProvider extends TileProvider {
     var localMin = 0.0;
     var localMax = 0.0;
     Point<double> tileOffset =
-        Point(options.tileSize * coords.x, options.tileSize * coords.y);
+        Point((options.tileDimension * coords.x).toDouble(), (options.tileDimension * coords.y).toDouble());
     for (final point in points) {
       if (bounds.contains(point.latLng)) {
-        var pixel =
-            crs.latLngToPoint(point.latLng, zoom.toDouble()) - tileOffset;
+        final xy = crs.latLngToXY(point.latLng, zoom.toDouble()) ;
+        var pixel = Point(xy.$1, xy.$2) - tileOffset;
 
         final x = ((pixel.x) ~/ cellSize) + 2 + gridOffset.ceil();
         final y = ((pixel.y) ~/ cellSize) + 2 + gridOffset.ceil();

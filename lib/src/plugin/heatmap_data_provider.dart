@@ -59,11 +59,14 @@ class GriddedHeatMapDataSource extends HeatMapDataSource {
     if (_gridCache.containsKey(z)) {
       return _gridCache[z]!;
     }
-    var leftBound = crs.latLngToPoint(bounds.northWest, z);
+    var leftBound = crs.latLngToXY(bounds.northWest, z);
 
-    var rightBound = crs.latLngToPoint(bounds.southEast, z);
+    var rightBound = crs.latLngToXY(bounds.southEast, z);
 
-    var size = Bounds(leftBound, rightBound).size;
+    var size = CustomBounds(
+      math.Point(leftBound.$1, leftBound.$2), 
+      math.Point(rightBound.$1, rightBound.$2), 
+    ).size;
 
     final cellSize = radius / 2;
 
@@ -79,9 +82,9 @@ class GriddedHeatMapDataSource extends HeatMapDataSource {
     var localMin = 0.0;
     var localMax = 0.0;
     for (final point in data) {
-      var globalPixel = crs.latLngToPoint(point.latLng, z);
+      var globalPixel = crs.latLngToXY(point.latLng, z);
       var pixel =
-          math.Point(globalPixel.x - leftBound.x, globalPixel.y - leftBound.y);
+          math.Point(globalPixel.$1 - leftBound.$1, globalPixel.$2 - leftBound.$2);
 
       final x = ((pixel.x) ~/ cellSize) + 2;
       final y = ((pixel.y) ~/ cellSize) + 2;
@@ -114,5 +117,16 @@ class GriddedHeatMapDataSource extends HeatMapDataSource {
     _gridCache[z] = griddedData;
 
     return griddedData;
+  }
+}
+
+class CustomBounds {
+  final math.Point min;
+  final math.Point max;
+
+  const CustomBounds(this.min, this.max);
+
+  math.Point get size {
+    return math.Point(max.x - min.x, max.y - min.y);
   }
 }
