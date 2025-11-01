@@ -68,8 +68,7 @@ class HeatMapTilesProvider extends TileProvider {
         Point((options.tileDimension * coords.x).toDouble(), (options.tileDimension * coords.y).toDouble());
     for (final point in points) {
       if (bounds.contains(point.latLng)) {
-        final xy = crs.latLngToXY(point.latLng, zoom.toDouble()) ;
-        var pixel = Point(xy.$1, xy.$2) - tileOffset;
+        var pixel = _latLngToPoint(point.latLng, zoom.toDouble()) - tileOffset;
 
         final x = ((pixel.x) ~/ cellSize) + 2 + gridOffset.ceil();
         final y = ((pixel.y) ~/ cellSize) + 2 + gridOffset.ceil();
@@ -155,4 +154,19 @@ class HeatMapImage extends ImageProvider<HeatMapImage> {
   Future<HeatMapImage> obtainKey(ImageConfiguration configuration) {
     return SynchronousFuture(this);
   }
+}
+
+Point<double> _latLngToPoint(LatLng latLng, double zoom) {
+  const earthRadius = 6378137.0;
+  const initialResolution = 2 * math.pi * earthRadius / 256;
+  final resolution = initialResolution / math.pow(2, zoom);
+
+  final x =
+      (latLng.longitude * math.pi / 180 + math.pi) * earthRadius / resolution;
+  final y = (math.pi -
+          math.log(math.tan(math.pi / 4 + latLng.latitude * math.pi / 360))) *
+      earthRadius /
+      resolution;
+
+  return Point(x, y);
 }

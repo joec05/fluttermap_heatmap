@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'latlong.dart';
 
@@ -59,13 +60,13 @@ class GriddedHeatMapDataSource extends HeatMapDataSource {
     if (_gridCache.containsKey(z)) {
       return _gridCache[z]!;
     }
-    var leftBound = crs.latLngToXY(bounds.northWest, z);
+    var leftBound = _latLngToPoint(bounds.northWest, z);
 
-    var rightBound = crs.latLngToXY(bounds.southEast, z);
+    var rightBound = _latLngToPoint(bounds.southEast, z);
 
     var size = CustomBounds(
-      math.Point(leftBound.$1, leftBound.$2), 
-      math.Point(rightBound.$1, rightBound.$2), 
+      leftBound,
+      rightBound 
     ).size;
 
     final cellSize = radius / 2;
@@ -82,9 +83,8 @@ class GriddedHeatMapDataSource extends HeatMapDataSource {
     var localMin = 0.0;
     var localMax = 0.0;
     for (final point in data) {
-      var globalPixel = crs.latLngToXY(point.latLng, z);
-      var pixel =
-          math.Point(globalPixel.$1 - leftBound.$1, globalPixel.$2 - leftBound.$2);
+      var globalPixel = _latLngToPoint(point.latLng, z);
+      var pixel = math.Point(globalPixel.x - leftBound.x, globalPixel.y - leftBound.y);
 
       final x = ((pixel.x) ~/ cellSize) + 2;
       final y = ((pixel.y) ~/ cellSize) + 2;
@@ -118,6 +118,21 @@ class GriddedHeatMapDataSource extends HeatMapDataSource {
 
     return griddedData;
   }
+}
+
+math.Point _latLngToPoint(LatLng latLng, double zoom) {
+  const earthRadius = 6378137.0;
+  const initialResolution = 2 * math.pi * earthRadius / 256;
+  final resolution = initialResolution / math.pow(2, zoom);
+
+  final x =
+      (latLng.longitude * math.pi / 180 + math.pi) * earthRadius / resolution;
+  final y = (math.pi -
+          math.log(math.tan(math.pi / 4 + latLng.latitude * math.pi / 360))) *
+      earthRadius /
+      resolution;
+
+  return math.Point(x, y);
 }
 
 class CustomBounds {
